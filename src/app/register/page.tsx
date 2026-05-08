@@ -19,20 +19,23 @@ export default function RegisterPage() {
     const { data, error } = await supabase
       .from("users")
       .insert([
-        {
-          name: firstName,
-          surname: surname,
-          phone: phone,
-        },
-      ])
-      .select();
+  {
+    name: firstName,
+    surname: surname,
+    phone: phone,
+  },
+])
+.select()
+.single();
 
     if (error) {
       alert(error.message);
       return;
     }
 
-    router.push(`/profile/${data[0].id}`);
+    console.log(data);
+
+    router.push(`/profile/${data.id}`);
   };
 
   return (
