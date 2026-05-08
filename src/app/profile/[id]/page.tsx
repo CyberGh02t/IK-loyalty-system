@@ -1,15 +1,13 @@
 "use client";
-export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function ProfilePage() {
-  const searchParams = useSearchParams();
-
-  const id = searchParams.get("id");
-
+export default function ProfilePage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -17,7 +15,7 @@ export default function ProfilePage() {
       const { data, error } = await supabase
         .from("users")
         .select("*")
-        .eq("id", Number(id));
+        .eq("id", Number(params.id));
 
       if (error) {
         console.log(error);
@@ -29,16 +27,14 @@ export default function ProfilePage() {
       }
     };
 
-    if (id) {
+    fetchUser();
+
+    const interval = setInterval(() => {
       fetchUser();
+    }, 2000);
 
-      const interval = setInterval(() => {
-        fetchUser();
-      }, 2000);
-
-      return () => clearInterval(interval);
-    }
-  }, [id]);
+    return () => clearInterval(interval);
+  }, [params.id]);
 
   if (!user) {
     return (
