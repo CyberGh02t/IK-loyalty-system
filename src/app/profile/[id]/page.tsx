@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function ProfilePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
+
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -15,26 +17,23 @@ export default function ProfilePage({
       const { data, error } = await supabase
         .from("users")
         .select("*")
-        .eq("id", Number(params.id));
+        .eq("id", Number(id))
+        .single();
 
-      if (error) {
-        console.log(error);
-        return;
-      }
+      console.log(data);
+      console.log(error);
 
-      if (data && data.length > 0) {
-        setUser(data[0]);
-      }
+      if (error) return;
+
+      setUser(data);
     };
 
     fetchUser();
 
-    const interval = setInterval(() => {
-      fetchUser();
-    }, 2000);
+    const interval = setInterval(fetchUser, 2000);
 
     return () => clearInterval(interval);
-  }, [params.id]);
+  }, [id]);
 
   if (!user) {
     return (
@@ -47,7 +46,7 @@ export default function ProfilePage({
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6">
       <div className="w-full max-w-md rounded-3xl bg-white/10 backdrop-blur-xl border border-white/10 p-8 text-white shadow-2xl">
-        
+
         <div className="flex items-center justify-between mb-8">
           <div>
             <p className="text-sm text-gray-400">
