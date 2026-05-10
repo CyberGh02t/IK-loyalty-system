@@ -7,41 +7,67 @@ import { supabase } from "@/lib/supabase";
 export default function RegisterPage() {
   const router = useRouter();
 
-  const [firstName, setFirstName] = useState("");
-  const [surname, setSurname] = useState("");
+  const [name, setName] = useState("");
+  const [surname, setSurname] =
+    useState("");
+
   const [phone, setPhone] = useState("");
 
-  const handleSubmit = async (
+  const [password, setPassword] =
+    useState("");
+
+  const handleRegister = async (
     e: React.FormEvent
   ) => {
     e.preventDefault();
 
-    const { data, error } = await supabase
-      .from("users")
-      .insert([
-  {
-    name: firstName,
-    surname: surname,
-    phone: phone,
-  },
-])
-.select()
-.single();
+    const fakeEmail =
+      `${phone}@loyalty.app`;
+
+    // AUTH REGISTER
+    const { data, error } =
+      await supabase.auth.signUp({
+        email: fakeEmail,
+        password,
+      });
 
     if (error) {
       alert(error.message);
       return;
     }
 
-    console.log(data);
+    const userId = data.user?.id;
 
-    router.push(`/profile/${data.id}`);
+    if (!userId) {
+      alert("User creation failed");
+      return;
+    }
+
+    // PROFILE TABLE
+    const { error: profileError } =
+      await supabase.from("users").insert([
+        {
+          auth_id: userId,
+          name,
+          surname,
+          phone,
+          bonus_count: 0,
+          free_reward: false,
+        },
+      ]);
+
+    if (profileError) {
+      alert(profileError.message);
+      return;
+    }
+
+    router.push("/");
   };
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-white shadow-2xl">
-        
+
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">
             ☕
@@ -52,22 +78,22 @@ export default function RegisterPage() {
           </h1>
 
           <p className="text-gray-400">
-            Join our loyalty program and earn free coffee
+            Create your account
           </p>
         </div>
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleRegister}
           className="flex flex-col gap-4"
         >
           <input
             type="text"
             placeholder="First Name"
-            value={firstName}
+            value={name}
             onChange={(e) =>
-              setFirstName(e.target.value)
+              setName(e.target.value)
             }
-            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-orange-400 transition"
+            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none"
           />
 
           <input
@@ -77,7 +103,7 @@ export default function RegisterPage() {
             onChange={(e) =>
               setSurname(e.target.value)
             }
-            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-orange-400 transition"
+            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none"
           />
 
           <input
@@ -87,14 +113,24 @@ export default function RegisterPage() {
             onChange={(e) =>
               setPhone(e.target.value)
             }
-            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-orange-400 transition"
+            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
+            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none"
           />
 
           <button
             type="submit"
-            className="bg-gradient-to-r from-orange-500 to-amber-600 hover:opacity-90 transition rounded-2xl p-4 font-bold text-lg mt-2"
+            className="bg-gradient-to-r from-orange-500 to-amber-600 rounded-2xl p-4 font-bold"
           >
-            Join Loyalty Program
+            Create Account
           </button>
         </form>
       </div>

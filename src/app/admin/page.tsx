@@ -1,111 +1,115 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
-  const [phone, setPhone] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
 
-  const findUser = async () => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("phone", phone)
-      .single();
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const handleLogin = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
+
+    // LOGIN
+    const { error } =
+      await supabase.auth.signInWithPassword(
+        {
+          email,
+          password,
+        }
+      );
 
     if (error) {
+      alert(error.message);
+      return;
+    }
+
+    // GET AUTH USER
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
       alert("User not found");
       return;
     }
 
-    setUser(data);
+    // CHECK ADMINS TABLE
+    const {
+      data: admin,
+      error: adminError,
+    } = await supabase
+      .from("admins")
+      .select("*")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (adminError || !admin) {
+      alert("Access denied");
+      return;
+    }
+
+    // SUCCESS
+    router.push("/admin/dashboard");
   };
 
-  const addCoffee = async () => {
-  if (!user) return;
-
-  let newBonusCount = user.bonus_count + 1;
-
-  let freeReward = false;
-
-  if (newBonusCount >= 5) {
-    freeReward = true;
-    newBonusCount = 0;
-  }
-
-  const { error } = await supabase
-    .from("users")
-    .update({
-      bonus_count: newBonusCount,
-      free_reward: freeReward,
-    })
-    .eq("id", user.id);
-
-  if (error) {
-    alert("Error updating bonus");
-    return;
-  }
-
-  setUser((prev: any) => ({
-  ...prev,
-  bonus_count: newBonusCount,
-  free_reward: freeReward,
-}));
-
-  alert("Coffee added!");
-};
-
   return (
-    <div className="min-h-screen bg-gray-100 p-10">
-      <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
-        <h1 className="text-3xl font-bold mb-6">
-          Admin Panel
-        </h1>
+    <div className="min-h-screen bg-black flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-white shadow-2xl">
 
-        <div className="flex flex-col gap-4">
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-4">
+            🛠️
+          </div>
+
+          <h1 className="text-4xl font-bold mb-2">
+            Admin Panel
+          </h1>
+
+          <p className="text-gray-400">
+            Staff access only
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleLogin}
+          className="flex flex-col gap-4"
+        >
           <input
-            type="text"
-            placeholder="Phone Number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="border p-3 rounded-lg"
+            type="email"
+            placeholder="Admin Email"
+            value={email}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
+            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
+            className="bg-white/5 border border-white/10 rounded-2xl p-4 outline-none"
           />
 
           <button
-            onClick={findUser}
-            className="bg-black text-white p-3 rounded-lg"
+            type="submit"
+            className="bg-gradient-to-r from-orange-500 to-amber-600 rounded-2xl p-4 font-bold"
           >
-            Find User
+            Login
           </button>
-        </div>
-
-        {user && (
-          <div className="mt-8 border-t pt-6">
-            <h2 className="text-2xl font-semibold">
-              {user.name} {user.surname}
-            </h2>
-
-            <p className="text-gray-500 mb-4">
-              {user.phone}
-            </p>
-
-            <div className="text-4xl mb-4">
-              {"☕".repeat(user.bonus_count)}
-            </div>
-
-            <p className="mb-4">
-              {user.bonus_count} / 5 Coffees
-            </p>
-
-            <button
-  onClick={addCoffee}
-  className="bg-black text-white px-4 py-3 rounded-lg w-full"
->
-  +1 Coffee
-</button>
-          </div>
-        )}
+        </form>
       </div>
     </div>
   );
